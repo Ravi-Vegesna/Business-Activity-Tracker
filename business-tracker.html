@@ -1,0 +1,1348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Business Tracker</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=DM+Sans:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tabler-icons/1.119.0/iconfont/tabler-icons.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg0:#0d0f12;--bg1:#13161b;--bg2:#1a1e26;--bg3:#222730;--bg4:#2a3040;
+  --border:#2e3545;--border2:#3d4860;
+  --txt:#e8ecf4;--txt2:#8e9ab5;--txt3:#5a6480;
+  --green:#3ddc84;--green-bg:#0d2a1a;--green-dim:#1a4030;
+  --orange:#f5a623;--orange-bg:#2a1e06;--orange-dim:#3d2d0a;
+  --red:#ff5c5c;--red-bg:#2a0d0d;--red-dim:#3d1515;
+  --blue:#5b8ef0;--blue-bg:#0d1a2a;--blue-dim:#1a2f50;
+  --purple:#a78bfa;--purple-bg:#1a1030;--purple-dim:#2a1a50;
+  --gray:#4a556e;--gray-bg:#1a1e26;
+  --radius:8px;--radius-lg:12px;
+}
+html,body{background:var(--bg0);color:var(--txt);font-family:'DM Sans',sans-serif;min-height:100vh;font-size:15px}
+.app{width:100%;max-width:1400px;margin:0 auto;padding:2rem 2.5rem}
+.topbar{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.4rem;flex-wrap:wrap;gap:12px}
+.app-brand{display:flex;align-items:center;gap:11px}
+.app-dot{width:11px;height:11px;border-radius:50%;background:var(--green);animation:pulse 2.5s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+.app-title{font-size:22px;font-weight:500;letter-spacing:-.2px}
+.date-badge{font-size:13px;color:var(--txt3);background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:6px 16px;font-family:'DM Mono',monospace}
+.file-bar{display:flex;align-items:center;justify-content:space-between;background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:11px 18px;margin-bottom:1.4rem;flex-wrap:wrap;gap:10px}
+.file-status{display:flex;align-items:center;gap:10px;font-size:13px;color:var(--txt3);flex:1;min-width:0}
+.file-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.file-name{font-family:'DM Mono',monospace;color:var(--txt2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.file-actions{display:flex;gap:8px}
+.tab-bar{display:flex;gap:3px;background:var(--bg2);border-radius:var(--radius);padding:4px;margin-bottom:1.5rem;border:1px solid var(--border)}
+.tab{flex:1;padding:10px 0;text-align:center;font-size:14px;color:var(--txt3);border-radius:6px;cursor:pointer;transition:all .15s;border:none;background:transparent;font-family:'DM Sans',sans-serif}
+.tab.active{background:var(--bg3);color:var(--txt);font-weight:500;border:1px solid var(--border2)}
+.tab:hover:not(.active){color:var(--txt2);background:var(--bg3)}
+.section{display:none}.section.active{display:block}
+.stats-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px;margin-bottom:1.4rem}
+.stat-card{border-radius:var(--radius);padding:20px 22px;border:1px solid var(--border)}
+.stat-lbl{font-size:11px;text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;font-weight:500}
+.stat-val{font-size:34px;font-weight:500;margin-bottom:3px;font-family:'DM Mono',monospace}
+.stat-sub{font-size:12px;opacity:.7}
+.s-total{background:var(--bg2)}.s-total .stat-lbl,.s-total .stat-sub{color:var(--txt3)}.s-total .stat-val{color:var(--txt)}
+.s-done{background:var(--green-bg);border-color:var(--green-dim)}.s-done .stat-lbl,.s-done .stat-sub{color:#2a9b5c}.s-done .stat-val{color:var(--green)}
+.s-prog{background:var(--orange-bg);border-color:var(--orange-dim)}.s-prog .stat-lbl,.s-prog .stat-sub{color:#a87020}.s-prog .stat-val{color:var(--orange)}
+.s-blk{background:var(--red-bg);border-color:var(--red-dim)}.s-blk .stat-lbl,.s-blk .stat-sub{color:#cc3333}.s-blk .stat-val{color:var(--red)}
+.card{background:var(--bg1);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.6rem 1.8rem;margin-bottom:1.2rem}
+.card-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.2rem}
+.card-title{font-size:15px;font-weight:500;color:var(--txt2)}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.form-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px}
+.fg{display:flex;flex-direction:column;gap:7px}
+.fg label{font-size:13px;color:var(--txt3)}
+.fg input,.fg select,.fg textarea{font-size:14px;padding:10px 14px;border-radius:var(--radius);border:1px solid var(--border);background:var(--bg2);color:var(--txt);resize:none;font-family:'DM Sans',sans-serif;outline:none;transition:border-color .15s}
+.fg input:focus,.fg textarea:focus{border-color:var(--border2)}
+.fg select option{background:var(--bg2);color:var(--txt)}
+.btn{padding:10px 18px;border-radius:var(--radius);font-size:13px;cursor:pointer;border:1px solid var(--border2);background:transparent;color:var(--txt2);transition:all .12s;font-family:'DM Sans',sans-serif;display:inline-flex;align-items:center;gap:7px;white-space:nowrap}
+.btn:hover{background:var(--bg3);color:var(--txt)}
+.btn-green{background:var(--green-dim);color:var(--green);border-color:#2a5c3a}
+.btn-green:hover{background:#0a2015;color:var(--green)}
+.btn-sm{padding:6px 12px;font-size:12px}
+.btn-del{color:var(--red);border-color:var(--red-dim)}
+.btn-del:hover{background:var(--red-bg)}
+.btn-save{background:#0d2a1a;color:var(--green);border-color:var(--green-dim)}
+.btn-save:hover{background:#0a2015}
+.btn-load{background:var(--blue-bg);color:var(--blue);border-color:var(--blue-dim)}
+.btn-load:hover{background:#060f1e}
+.btn-xl{background:var(--green-bg);color:var(--green);border-color:var(--green-dim)}
+.btn-pdf{background:var(--red-bg);color:var(--red);border-color:var(--red-dim)}
+
+/* GOAL LINK BADGE */
+.goal-link-badge{display:inline-flex;align-items:center;gap:5px;padding:3px 10px;border-radius:20px;font-size:12px;font-weight:500;background:var(--purple-bg);color:var(--purple);border:1px solid var(--purple-dim);cursor:pointer;transition:background .12s}
+.goal-link-badge:hover{background:var(--purple-dim)}
+
+/* ACTIVITIES */
+.activities-list{display:flex;flex-direction:column;gap:12px}
+.a-item{background:var(--bg1);border-radius:var(--radius-lg);padding:18px 22px;border:1px solid var(--border);border-left:4px solid var(--gray);transition:border-color .15s}
+.a-item:hover{border-color:var(--border2);border-left-color:inherit}
+.a-item.sl-inprogress{border-left-color:var(--orange)}
+.a-item.sl-done{border-left-color:var(--green)}
+.a-item.sl-blocked{border-left-color:var(--red)}
+.a-item.sl-todo{border-left-color:var(--gray)}
+.a-top{display:flex;align-items:flex-start;justify-content:space-between;gap:14px}
+.a-title{font-size:16px;font-weight:500;color:var(--txt);margin-bottom:7px}
+.a-meta{display:flex;align-items:center;gap:9px;flex-wrap:wrap}
+.a-actions{display:flex;gap:7px;flex-shrink:0}
+.badge{display:inline-flex;align-items:center;gap:5px;padding:4px 11px;border-radius:20px;font-size:12px;font-weight:500}
+.b-todo{background:var(--gray-bg);color:#8e9ab5;border:1px solid #2e3545}
+.b-inprogress{background:var(--orange-bg);color:var(--orange);border:1px solid var(--orange-dim)}
+.b-done{background:var(--green-bg);color:var(--green);border:1px solid var(--green-dim)}
+.b-blocked{background:var(--red-bg);color:var(--red);border:1px solid var(--red-dim)}
+.b-cat{background:var(--bg3);color:var(--txt3);border:1px solid var(--border)}
+.bdot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+.ppill{font-size:12px;font-weight:500;padding:3px 10px;border-radius:10px}
+.pp-critical{background:var(--red-bg);color:var(--red)}
+.pp-high{background:var(--orange-bg);color:var(--orange)}
+.pp-medium{background:var(--blue-bg);color:var(--blue)}
+.pp-low{background:var(--bg3);color:var(--txt3)}
+.prog-wrap{margin-top:12px}
+.prog-lbl{font-size:12px;color:var(--txt3);display:flex;justify-content:space-between;margin-bottom:5px}
+.prog-track{height:6px;background:var(--bg3);border-radius:3px;overflow:hidden}
+.prog-fill{height:100%;border-radius:3px;transition:width .3s}
+.prog-row{display:flex;gap:10px;align-items:center;margin-top:10px}
+.prog-row input[type=range]{flex:1;cursor:pointer;height:6px}
+.prog-row span{font-size:12px;color:var(--txt3);min-width:34px;font-family:'DM Mono',monospace}
+.filter-bar{display:flex;gap:10px;margin-bottom:1.2rem;flex-wrap:wrap}
+.filter-bar input,.filter-bar select{font-size:13px;padding:8px 13px;border-radius:var(--radius);border:1px solid var(--border);background:var(--bg2);color:var(--txt);font-family:'DM Sans',sans-serif;outline:none}
+.filter-bar input{flex:1;min-width:160px}
+.empty{text-align:center;padding:3.5rem 1rem;color:var(--txt3);font-size:15px}
+.empty i{font-size:40px;display:block;margin-bottom:12px;opacity:.3}
+
+/* GOALS */
+.goals-list{display:flex;flex-direction:column;gap:14px}
+.g-item{background:var(--bg1);border:1px solid var(--border);border-left:4px solid var(--gray);border-radius:var(--radius-lg);padding:18px 22px}
+.g-title{font-size:16px;font-weight:500;color:var(--txt);margin-bottom:4px}
+.g-meta{font-size:13px;color:var(--txt3);margin-bottom:12px}
+.g-prog-track{flex:1;height:9px;background:var(--bg3);border-radius:5px;overflow:hidden}
+.g-prog-fill{height:100%;border-radius:5px;transition:width .3s}
+
+/* LINKED ITEMS inside goal */
+.linked-section{margin-top:16px;padding-top:14px;border-top:1px solid var(--border)}
+.linked-hdr{font-size:11px;font-weight:500;color:var(--txt3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:10px;display:flex;align-items:center;gap:7px}
+.linked-item{display:flex;align-items:center;justify-content:space-between;padding:9px 14px;background:var(--bg2);border-radius:var(--radius);margin-bottom:7px;border:1px solid var(--border);gap:12px}
+.linked-item-title{font-size:13px;color:var(--txt);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.linked-log-item{padding:9px 14px;background:var(--bg2);border-radius:var(--radius);margin-bottom:7px;border-left:3px solid var(--purple);border-top:1px solid var(--border);border-right:1px solid var(--border);border-bottom:1px solid var(--border)}
+.linked-log-text{font-size:13px;color:var(--txt)}
+.linked-log-meta{font-size:11px;color:var(--txt3);margin-top:3px;font-family:'DM Mono',monospace}
+
+/* LOG */
+.log-list{display:flex;flex-direction:column}
+.log-entry{display:flex;align-items:flex-start;gap:14px;padding:13px 0;border-bottom:1px solid var(--border)}
+.log-dot{width:9px;height:9px;border-radius:50%;margin-top:4px;flex-shrink:0}
+.log-ts{font-size:12px;color:var(--txt3);font-family:'DM Mono',monospace;white-space:nowrap}
+.log-goal-link{display:inline-flex;align-items:center;gap:4px;font-size:12px;color:var(--purple);background:var(--purple-bg);border:1px solid var(--purple-dim);border-radius:10px;padding:2px 9px;margin-top:4px}
+
+/* CHARTS */
+.chart-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:1.4rem}
+.chart-box{background:var(--bg1);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.4rem 1.6rem}
+.chart-lbl{font-size:13px;color:var(--txt3);margin-bottom:14px;font-weight:500}
+.bar-chart{display:flex;flex-direction:column;gap:10px}
+.bar-row{display:flex;align-items:center;gap:10px}
+.bar-lbl{font-size:12px;color:var(--txt3);min-width:28px;text-align:right;font-family:'DM Mono',monospace}
+.bar-outer{flex:1;height:16px;background:var(--bg3);border-radius:4px;overflow:hidden}
+.bar-inner{height:100%;border-radius:4px}
+.bar-val{font-size:12px;color:var(--txt3);min-width:18px;font-family:'DM Mono',monospace}
+.donut-wrap{display:flex;align-items:center;justify-content:center;gap:20px}
+.donut-leg{display:flex;flex-direction:column;gap:9px}
+.leg-item{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--txt3)}
+.leg-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+
+/* EXPORT */
+.export-section{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius-lg);padding:1.5rem 1.8rem;margin-bottom:1.2rem}
+.export-section-title{font-size:14px;font-weight:500;color:var(--txt2);margin-bottom:8px;display:flex;align-items:center;gap:8px}
+.export-desc{font-size:13px;color:var(--txt3);margin-bottom:14px;line-height:1.7}
+.export-row{display:flex;gap:10px;flex-wrap:wrap}
+.export-note{font-size:13px;color:var(--txt3);margin-top:11px;display:flex;align-items:center;gap:7px;min-height:20px}
+.ai-panel{background:var(--bg2);border:1px solid var(--border2);border-radius:var(--radius-lg);padding:1.5rem 1.8rem;margin-bottom:1.2rem}
+.prompt-list{display:flex;flex-direction:column;gap:8px}
+.prompt-item{background:var(--bg3);border:1px solid var(--border);border-radius:var(--radius);padding:12px 16px;font-size:13px;color:var(--txt3);cursor:pointer;transition:all .12s;display:flex;align-items:flex-start;gap:10px;line-height:1.5}
+.prompt-item:hover{background:var(--bg4);color:var(--txt2);border-color:var(--border2)}
+.prompt-item i{margin-top:2px;flex-shrink:0;color:var(--blue);font-size:15px}
+.copied-toast{position:fixed;bottom:24px;right:24px;background:var(--green-dim);color:var(--green);border:1px solid var(--green-dim);border-radius:var(--radius);padding:10px 20px;font-size:13px;font-family:'DM Sans',sans-serif;display:none;z-index:999;align-items:center;gap:7px}
+.ts-mono{font-family:'DM Mono',monospace;font-size:12px;color:var(--txt3)}
+
+/* DOWNLOAD TIP BOX */
+.dl-tip{background:var(--blue-bg);border:1px solid var(--blue-dim);border-radius:var(--radius);padding:12px 16px;margin-bottom:14px;font-size:12px;color:var(--txt3);line-height:1.7}
+.dl-tip strong{color:var(--blue)}
+.dl-tip code{font-family:'DM Mono',monospace;background:var(--bg3);padding:1px 6px;border-radius:4px;font-size:11px;color:var(--txt2)}
+
+/* CONFIRM MODAL */
+.confirm-modal{background:var(--bg1);border:1px solid var(--red-dim);border-radius:var(--radius-lg);padding:2rem;width:100%;max-width:460px;margin:1rem}
+.confirm-title{font-size:16px;font-weight:500;color:var(--txt);margin-bottom:.6rem;display:flex;align-items:center;gap:9px}
+.confirm-body{font-size:13px;color:var(--txt3);margin-bottom:1.4rem;line-height:1.6}
+.confirm-actions{display:flex;gap:10px;justify-content:flex-end}
+.btn-confirm-del{background:var(--red-bg);color:var(--red);border-color:var(--red-dim)}
+.btn-confirm-del:hover{background:#3d0f0f}
+
+/* ADD LOG TO GOAL MODAL */
+.modal-backdrop{display:none;position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:500;align-items:center;justify-content:center}
+.modal-backdrop.open{display:flex}
+.modal{background:var(--bg1);border:1px solid var(--border2);border-radius:var(--radius-lg);padding:2rem;width:100%;max-width:560px;margin:1rem}
+.modal-title{font-size:16px;font-weight:500;color:var(--txt);margin-bottom:1.2rem;display:flex;align-items:center;gap:9px}
+.modal-actions{display:flex;gap:10px;margin-top:1.2rem;justify-content:flex-end}
+
+@media(max-width:900px){
+  .stats-grid{grid-template-columns:1fr 1fr}
+  .chart-grid{grid-template-columns:1fr}
+  .app{padding:1.5rem 1.25rem}
+}
+@media(max-width:600px){
+  .form-row,.form-row-3{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- ADD LOG TO GOAL MODAL -->
+<div class="modal-backdrop" id="log-modal">
+  <div class="modal">
+    <div class="modal-title"><i class="ti ti-link" style="color:var(--purple)"></i><span id="modal-goal-name">Log entry for goal</span></div>
+    <input type="hidden" id="modal-goal-id">
+    <div class="fg" style="margin-bottom:10px">
+      <label>Log entry</label>
+      <textarea id="modal-log-text" rows="3" placeholder="What progress did you make on this goal? Any blockers, decisions, or milestones?"></textarea>
+    </div>
+    <div class="fg" style="margin-bottom:10px">
+      <label>Tag</label>
+      <select id="modal-log-tag">
+        <option>Update</option><option>Milestone</option><option>Decision</option><option>Blocker</option><option>Note</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-green" onclick="submitGoalLog()"><i class="ti ti-check"></i> Add log entry</button>
+    </div>
+  </div>
+</div>
+
+<!-- CONFIRM MODAL -->
+<div class="modal-backdrop" id="confirm-modal">
+  <div class="confirm-modal">
+    <div class="confirm-title"><i class="ti ti-alert-triangle" style="color:var(--red)"></i><span id="confirm-title-text">Are you sure?</span></div>
+    <div class="confirm-body" id="confirm-body-text"></div>
+    <div class="confirm-actions">
+      <button class="btn" onclick="closeConfirm()">Cancel</button>
+      <button class="btn btn-confirm-del" id="confirm-ok-btn"><i class="ti ti-trash"></i> <span id="confirm-ok-label">Delete</span></button>
+    </div>
+  </div>
+</div>
+
+<div class="app">
+  <div class="topbar">
+    <div class="app-brand">
+      <span class="app-dot"></span>
+      <span class="app-title">Business Tracker</span>
+    </div>
+    <span class="date-badge" id="current-date"></span>
+  </div>
+
+  <div class="file-bar">
+    <div class="file-status">
+      <div class="file-dot" id="file-dot" style="background:var(--orange)"></div>
+      <span id="file-label">No file loaded</span>
+      <span class="file-name" id="file-name"></span>
+    </div>
+    <div class="file-actions">
+      <button class="btn btn-sm btn-load" onclick="loadFromFile()"><i class="ti ti-folder-open"></i> Load</button>
+      <button class="btn btn-sm btn-save" onclick="saveToFile()"><i class="ti ti-device-floppy"></i> Save to disk</button>
+    </div>
+  </div>
+
+  <div class="tab-bar">
+    <button class="tab active" onclick="switchTab('dashboard')"><i class="ti ti-layout-dashboard"></i> Dashboard</button>
+    <button class="tab" onclick="switchTab('activities')"><i class="ti ti-checklist"></i> Activities</button>
+    <button class="tab" onclick="switchTab('goals')"><i class="ti ti-target"></i> Goals</button>
+    <button class="tab" onclick="switchTab('log')"><i class="ti ti-timeline"></i> Log</button>
+    <button class="tab" onclick="switchTab('export')"><i class="ti ti-download"></i> Export &amp; AI</button>
+  </div>
+
+  <!-- DASHBOARD -->
+  <div id="tab-dashboard" class="section active">
+    <div class="stats-grid" id="stats-grid"></div>
+    <div class="chart-grid">
+      <div class="chart-box">
+        <div class="chart-lbl"><i class="ti ti-chart-pie" style="vertical-align:-2px;margin-right:4px"></i>By status</div>
+        <div class="donut-wrap">
+          <canvas id="donut-canvas" width="150" height="150"></canvas>
+          <div class="donut-leg" id="donut-legend"></div>
+        </div>
+      </div>
+      <div class="chart-box">
+        <div class="chart-lbl"><i class="ti ti-chart-bar" style="vertical-align:-2px;margin-right:4px"></i>Last 7 days</div>
+        <div class="bar-chart" id="week-bars"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-hdr"><span class="card-title"><i class="ti ti-sun" style="vertical-align:-2px;margin-right:5px;color:var(--orange)"></i>Today's activities</span></div>
+      <div id="today-list"></div>
+    </div>
+  </div>
+
+  <!-- ACTIVITIES -->
+  <div id="tab-activities" class="section">
+    <div class="card">
+      <div class="card-hdr"><span class="card-title"><i class="ti ti-plus" style="vertical-align:-2px;margin-right:5px;color:var(--green)"></i>Add activity</span></div>
+      <div class="form-row">
+        <div class="fg"><label>Title</label><input id="act-title" placeholder="What are you working on?"></div>
+        <div class="fg"><label>Category</label>
+          <select id="act-cat"><option>Sales</option><option>Marketing</option><option>Operations</option><option>Finance</option><option>HR</option><option>Product</option><option>Client</option><option>Admin</option></select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="fg"><label>Priority</label>
+          <select id="act-priority"><option>Low</option><option>Medium</option><option selected>High</option><option>Critical</option></select>
+        </div>
+        <div class="fg"><label>Due date</label><input type="date" id="act-due"></div>
+      </div>
+      <div class="fg" style="margin-bottom:9px">
+        <label><i class="ti ti-target" style="vertical-align:-1px;margin-right:4px;color:var(--purple)"></i>Link to goal <span style="color:var(--txt3)">(optional)</span></label>
+        <select id="act-goal-link"><option value="">— No goal linked —</option></select>
+      </div>
+      <div class="fg" style="margin-bottom:12px"><label>Notes</label><textarea id="act-notes" rows="2" placeholder="Details, blockers, next steps…"></textarea></div>
+      <button class="btn btn-green" onclick="addActivity()"><i class="ti ti-plus"></i> Add activity</button>
+    </div>
+    <div class="filter-bar">
+      <input id="search-activities" placeholder="Search activities…" oninput="renderActivities()">
+      <select id="filter-status" onchange="renderActivities()">
+        <option value="">All statuses</option><option>To-do</option><option>In progress</option><option>Done</option><option>Blocked</option>
+      </select>
+      <select id="filter-cat" onchange="renderActivities()">
+        <option value="">All categories</option><option>Sales</option><option>Marketing</option><option>Operations</option><option>Finance</option><option>HR</option><option>Product</option><option>Client</option><option>Admin</option>
+      </select>
+      <select id="filter-goal" onchange="renderActivities()">
+        <option value="">All goals</option>
+      </select>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px">
+      <span id="act-count-label" style="font-size:13px;color:var(--txt3)"></span>
+      <div style="display:flex;gap:8px">
+        <button class="btn btn-sm" onclick="markAllDone()" style="border-color:var(--green-dim);color:var(--green)"><i class="ti ti-checks"></i> Mark all done</button>
+        <button class="btn btn-sm btn-del" onclick="confirmClearActivities()"><i class="ti ti-trash"></i> Clear all activities</button>
+      </div>
+    </div>
+    <div class="activities-list" id="activities-list"></div>
+  </div>
+
+  <!-- GOALS -->
+  <div id="tab-goals" class="section">
+    <div class="card">
+      <div class="card-hdr"><span class="card-title"><i class="ti ti-target" style="vertical-align:-2px;margin-right:5px;color:var(--green)"></i>Add goal</span></div>
+      <div class="form-row">
+        <div class="fg"><label>Goal title</label><input id="goal-title" placeholder="e.g. Close 10 new deals this month"></div>
+        <div class="fg"><label>Category</label>
+          <select id="goal-cat"><option>Revenue</option><option>Clients</option><option>Operations</option><option>Team</option><option>Product</option><option>Personal</option></select>
+        </div>
+      </div>
+      <div class="form-row-3">
+        <div class="fg"><label>Target value</label><input type="number" id="goal-target" placeholder="100"></div>
+        <div class="fg"><label>Unit</label><input id="goal-unit" placeholder="deals, %, calls…"></div>
+        <div class="fg"><label>Deadline</label><input type="date" id="goal-deadline"></div>
+      </div>
+      <button class="btn btn-green" onclick="addGoal()"><i class="ti ti-plus"></i> Add goal</button>
+    </div>
+    <div class="goals-list" id="goals-list"></div>
+  </div>
+
+  <!-- LOG -->
+  <div id="tab-log" class="section">
+    <div class="card">
+      <div class="card-hdr"><span class="card-title"><i class="ti ti-pencil" style="vertical-align:-2px;margin-right:5px;color:var(--blue)"></i>Add log entry</span></div>
+      <div class="form-row">
+        <div class="fg"><label>Entry</label><input id="log-entry" placeholder="What happened, decisions, milestones…"></div>
+        <div class="fg"><label>Tag</label>
+          <select id="log-tag"><option>Update</option><option>Decision</option><option>Milestone</option><option>Blocker</option><option>Note</option></select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="fg">
+          <label><i class="ti ti-target" style="vertical-align:-1px;margin-right:4px;color:var(--purple)"></i>Link to goal <span style="color:var(--txt3)">(optional)</span></label>
+          <select id="log-goal-link"><option value="">— No goal linked —</option></select>
+        </div>
+        <div class="fg">
+          <label><i class="ti ti-calendar" style="vertical-align:-1px;margin-right:4px;color:var(--blue)"></i>Due date <span style="color:var(--txt3)">(optional)</span></label>
+          <input type="date" id="log-due">
+        </div>
+      </div>
+      <button class="btn btn-green" onclick="addLog()"><i class="ti ti-plus"></i> Log it</button>
+    </div>
+    <div class="card">
+      <div class="card-hdr">
+        <span class="card-title"><i class="ti ti-history" style="vertical-align:-2px;margin-right:5px;color:var(--txt3)"></i>Activity log — latest first</span>
+        <div style="display:flex;align-items:center;gap:8px">
+          <select id="log-filter-goal" onchange="renderLog()" style="font-size:12px;padding:6px 10px;border-radius:var(--radius);border:1px solid var(--border);background:var(--bg2);color:var(--txt);outline:none">
+            <option value="">All entries</option>
+          </select>
+          <button class="btn btn-sm btn-del" onclick="confirmClearLogs()"><i class="ti ti-trash"></i> Clear all logs</button>
+        </div>
+      </div>
+      <div class="log-list" id="log-list"></div>
+    </div>
+  </div>
+
+  <!-- EXPORT & AI -->
+  <div id="tab-export" class="section">
+
+    <div class="dl-tip">
+      <strong><i class="ti ti-info-circle" style="vertical-align:-2px;margin-right:5px"></i>One-time browser setup — auto-save files without "Save As" dialog</strong><br>
+      <strong>Chrome / Edge:</strong> Go to <code>Settings → Downloads</code> → turn OFF <em>"Ask where to save each file before downloading"</em>. Files will then save directly to your Downloads folder automatically.<br>
+      <strong>Firefox:</strong> Go to <code>Settings → General → Downloads</code> → select <em>"Save files to"</em> and pick your folder. Uncheck <em>"Always ask you where to save files"</em>.<br>
+      After this one-time change, every export will save instantly with its timestamp filename — no dialog needed.
+    </div>
+    <div class="export-section">
+      <div class="export-section-title"><i class="ti ti-device-floppy" style="color:var(--green)"></i>Save data to disk (JSON)</div>
+      <div class="export-desc">Saves everything — activities, goals, logs, and all goal links — as a timestamped <strong style="color:var(--txt2)">business-tracker_YYYY-MM-DD_HH-MM-SS.json</strong> file. <span style="color:var(--orange)">All three formats (JSON, Excel, PDF) use the same naming pattern and save to the same Downloads folder</span> — disable "Ask where to save" in browser settings once (see tip above) and all exports land there automatically. Upload the JSON to Claude or Copilot for AI analysis.</div>
+      <div class="export-row">
+        <button class="btn btn-save" onclick="saveToFile()"><i class="ti ti-device-floppy"></i> Save JSON to disk</button>
+        <button class="btn btn-load" onclick="loadFromFile()"><i class="ti ti-folder-open"></i> Load JSON from disk</button>
+      </div>
+      <div class="export-note" id="json-note"></div>
+    </div>
+    <div class="export-section">
+      <div class="export-section-title"><i class="ti ti-table" style="color:var(--green)"></i>Export to Excel (.xlsx)</div>
+      <div class="export-desc">Creates a timestamped <strong style="color:var(--txt2)">business-tracker_YYYY-MM-DD_HH-MM-SS.xlsx</strong> with four color-coded sheets: Activities, Goals, Log, and Goal Relationships. <span style="color:var(--orange)">Save it in the same folder as this HTML file.</span> Open in Excel and use Copilot to analyse.</div>
+      <div class="export-row"><button class="btn btn-xl" onclick="exportExcel()"><i class="ti ti-file-spreadsheet"></i> Export to Excel (.xlsx)</button></div>
+      <div class="export-note" id="xl-note"></div>
+    </div>
+    <div class="export-section">
+      <div class="export-section-title"><i class="ti ti-file-text" style="color:var(--red)"></i>Export to PDF</div>
+      <div class="export-desc">Opens a color-coded report in a <strong style="color:var(--txt2)">new browser tab</strong> and automatically triggers the <strong style="color:var(--txt2)">Print dialog</strong>. In the dialog, set Destination to <strong style="color:var(--green)">Save as PDF</strong> and click Save — it goes directly to your Downloads folder with no extra steps. Includes a cover page, goal cards with progress bars, colored status/priority pills, and linked log entries.</div>
+      <div class="export-row"><button class="btn btn-pdf" onclick="exportPDF()"><i class="ti ti-file-text"></i> Export to PDF</button></div>
+      <div class="export-note" id="pdf-note"></div>
+    </div>
+    <div class="ai-panel">
+      <div class="export-section-title" style="margin-bottom:8px"><i class="ti ti-robot" style="color:var(--blue)"></i>Ready-made AI prompts</div>
+      <p style="font-size:11px;color:var(--txt3);margin-bottom:10px;line-height:1.5">Save your JSON or Excel file, upload to <strong style="color:var(--txt2)">Claude.ai</strong> or <strong style="color:var(--txt2)">Copilot</strong>, then paste a prompt.</p>
+      <div class="prompt-list" id="prompt-list"></div>
+    </div>
+  </div>
+</div>
+
+<div class="copied-toast" id="toast"><i class="ti ti-check"></i> Copied to clipboard</div>
+
+<script>
+const DB_KEY='biz_v5';
+let db={activities:[],goals:[],log:[]};
+let currentFileName=null,unsaved=false;
+
+function save(){
+  try{
+    localStorage.setItem(DB_KEY,JSON.stringify(db));
+    unsaved=true; updateFileBar();
+  }catch(e){}
+}
+function load(){try{const r=localStorage.getItem(DB_KEY);if(r)db=JSON.parse(r)}catch(e){}}
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+function today(){return new Date().toISOString().slice(0,10)}
+function fmtDate(iso){if(!iso)return'—';const[y,m,d]=iso.split('-');return`${d}/${m}/${y}`}
+function fmtTS(ts){
+  if(!ts)return'';const d=new Date(ts);
+  return d.toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'})+' '+
+         d.toLocaleTimeString('en-GB',{hour:'2-digit',minute:'2-digit'});
+}
+function timeSince(ts){
+  const s=Math.floor((Date.now()-ts)/1000);
+  if(s<60)return'just now';if(s<3600)return Math.floor(s/60)+'m ago';
+  if(s<86400)return Math.floor(s/3600)+'h ago';return Math.floor(s/86400)+'d ago';
+}
+
+function updateFileBar(){
+  const dot=document.getElementById('file-dot'),label=document.getElementById('file-label'),fname=document.getElementById('file-name');
+  if(currentFileName){dot.style.background=unsaved?'var(--orange)':'var(--green)';label.textContent=unsaved?'Unsaved changes — ':'Saved · ';fname.textContent=currentFileName;}
+  else{dot.style.background=unsaved?'var(--orange)':'var(--txt3)';label.textContent=unsaved?'Unsaved changes — save to disk for AI analysis':'Browser storage only — use Save to disk';fname.textContent='';}
+}
+
+const SDOT={'To-do':'#4a556e','In progress':'#f5a623','Done':'#3ddc84','Blocked':'#ff5c5c'};
+const SBC={'To-do':'b-todo','In progress':'b-inprogress','Done':'b-done','Blocked':'b-blocked'};
+const SLC={'To-do':'sl-todo','In progress':'sl-inprogress','Done':'sl-done','Blocked':'sl-blocked'};
+const LTC={Milestone:'#3ddc84',Blocker:'#ff5c5c',Decision:'#5b8ef0',Update:'#f5a623',Note:'#4a556e'};
+
+function switchTab(n){
+  document.querySelectorAll('.tab').forEach((t,i)=>t.classList.toggle('active',['dashboard','activities','goals','log','export'][i]===n));
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('tab-'+n).classList.add('active');
+  if(n==='dashboard')renderDashboard();
+  if(n==='activities'){populateGoalSelects();renderActivities();}
+  if(n==='goals')renderGoals();
+  if(n==='log'){populateGoalSelects();renderLog();}
+  if(n==='export')renderExportTab();
+}
+
+function sBadge(s){return`<span class="badge ${SBC[s]}"><span class="bdot" style="background:${SDOT[s]}"></span>${s}</span>`}
+function pPill(p){const m={Critical:'pp-critical',High:'pp-high',Medium:'pp-medium',Low:'pp-low'};return`<span class="ppill ${m[p]||'pp-low'}">${p}</span>`}
+function pct(a){if(a.status==='Done')return 100;if(a.status==='To-do')return 0;return a.progress||0}
+function barClr(s,p){if(s==='Done')return'#3ddc84';if(s==='Blocked')return'#ff5c5c';if(p>=70)return'#3ddc84';if(p>=30)return'#f5a623';return'#ff5c5c'}
+function goalName(id){if(!id)return null;const g=db.goals.find(x=>x.id===id);return g?g.title:null}
+function showNote(id,type,msg){
+  const el=document.getElementById(id);if(!el)return;
+  const icon=type==='success'?`<i class="ti ti-check" style="color:var(--green);flex-shrink:0"></i>`:`<i class="ti ti-alert-circle" style="color:var(--red);flex-shrink:0"></i>`;
+  el.innerHTML=icon+' '+msg;
+}
+
+/* ---- POPULATE GOAL DROPDOWNS ---- */
+function populateGoalSelects(){
+  const opts=['<option value="">— No goal linked —</option>',...db.goals.map(g=>`<option value="${g.id}">${g.title}</option>`)].join('');
+  const filterOpts=['<option value="">All goals</option>',...db.goals.map(g=>`<option value="${g.id}">${g.title}</option>`)].join('');
+  ['act-goal-link','log-goal-link'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML=opts;});
+  ['filter-goal','log-filter-goal'].forEach(id=>{const el=document.getElementById(id);if(el)el.innerHTML=filterOpts;});
+}
+
+/* ---- ACTIVITIES ---- */
+function addActivity(){
+  const t=document.getElementById('act-title').value.trim();if(!t)return;
+  const goalId=document.getElementById('act-goal-link').value||null;
+  const a={id:uid(),title:t,category:document.getElementById('act-cat').value,
+    priority:document.getElementById('act-priority').value,due:document.getElementById('act-due').value,
+    notes:document.getElementById('act-notes').value.trim(),goalId,
+    status:'To-do',progress:0,created:today(),updatedTs:Date.now(),ts:Date.now()};
+  db.activities.unshift(a);
+  const gn=goalName(goalId);
+  db.log.unshift({id:uid(),text:`Added activity: ${t}${gn?' [Goal: '+gn+']':''}`,tag:'Update',goalId,ts:Date.now()});
+  save();['act-title','act-notes','act-due'].forEach(i=>document.getElementById(i).value='');
+  document.getElementById('act-goal-link').value='';
+  renderActivities();
+}
+
+function updateStatus(id,status){
+  const a=db.activities.find(x=>x.id===id);if(!a)return;
+  const prev=a.status;a.status=status;a.updatedTs=Date.now();
+  if(status==='Done')a.progress=100;if(status==='To-do')a.progress=0;
+  const gn=goalName(a.goalId);
+  db.log.unshift({id:uid(),text:`"${a.title}": ${prev} → ${status}${gn?' [Goal: '+gn+']':''}`,
+    tag:status==='Done'?'Milestone':'Update',goalId:a.goalId,ts:Date.now()});
+  save();renderActivities();renderDashboardStats();
+}
+
+function updateProgress(id){
+  const a=db.activities.find(x=>x.id===id);if(!a)return;
+  const val=parseInt(document.getElementById('prog-'+id).value)||0;
+  a.progress=Math.min(100,Math.max(0,val));a.updatedTs=Date.now();
+  if(a.progress===100)a.status='Done';
+  else if(a.progress>0&&a.status==='To-do')a.status='In progress';
+  db.log.unshift({id:uid(),text:`"${a.title}" progress: ${a.progress}%`,tag:'Update',goalId:a.goalId,ts:Date.now()});
+  save();renderActivities();
+}
+
+function deleteActivity(id){
+  const a=db.activities.find(x=>x.id===id);
+  if(a)db.log.unshift({id:uid(),text:`Removed activity: ${a.title}`,tag:'Note',goalId:a.goalId,ts:Date.now()});
+  db.activities=db.activities.filter(x=>x.id!==id);save();renderActivities();
+}
+
+function relinkActivity(id,newGoalId){
+  const a=db.activities.find(x=>x.id===id);if(!a)return;
+  const oldG=goalName(a.goalId),newG=goalName(newGoalId||null);
+  a.goalId=newGoalId||null;a.updatedTs=Date.now();
+  db.log.unshift({id:uid(),text:`"${a.title}" relinked: ${oldG||'none'} → ${newG||'none'}`,tag:'Update',goalId:a.goalId,ts:Date.now()});
+  save();renderActivities();
+}
+
+function renderActivities(){
+  const list=document.getElementById('activities-list');
+  const q=(document.getElementById('search-activities').value||'').toLowerCase();
+  const fs=document.getElementById('filter-status').value;
+  const fc=document.getElementById('filter-cat').value;
+  const fg=document.getElementById('filter-goal').value;
+  let items=db.activities.filter(a=>
+    (!q||a.title.toLowerCase().includes(q)||(a.notes||'').toLowerCase().includes(q))&&
+    (!fs||a.status===fs)&&(!fc||a.category===fc)&&(!fg||a.goalId===fg)
+  );
+  items.sort((a,b)=>(b.updatedTs||b.ts)-(a.updatedTs||a.ts));
+  const lbl=document.getElementById('act-count-label');
+  if(lbl)lbl.textContent=items.length?`${items.length} activit${items.length===1?'y':'ies'} shown`:'';
+  if(!items.length){list.innerHTML=`<div class="empty"><i class="ti ti-inbox"></i>No activities yet.</div>`;return;}
+  const goalOpts=['<option value="">— No goal —</option>',...db.goals.map(g=>`<option value="${g.id}">${g.title}</option>`)].join('');
+  list.innerHTML=items.map(a=>{
+    const p=pct(a),bc=barClr(a.status,p);
+    const gn=goalName(a.goalId);
+    return`<div class="a-item ${SLC[a.status]||'sl-todo'}">
+      <div class="a-top">
+        <div style="flex:1">
+          <div class="a-title">${a.title}</div>
+          <div class="a-meta">
+            ${sBadge(a.status)}
+            <span class="badge b-cat">${a.category}</span>
+            ${pPill(a.priority)}
+            ${a.due?`<span style="font-size:10px;color:var(--txt3)"><i class="ti ti-calendar" style="font-size:10px;vertical-align:-1px"></i> ${fmtDate(a.due)}</span>`:''}
+            ${gn?`<span class="goal-link-badge" title="Linked goal"><i class="ti ti-target" style="font-size:10px"></i>${gn}</span>`:''}
+            <span class="ts-mono" style="margin-left:auto">${fmtTS(a.updatedTs||a.ts)}</span>
+          </div>
+          ${a.notes?`<div style="font-size:11px;color:var(--txt3);margin-top:5px;line-height:1.5">${a.notes}</div>`:''}
+        </div>
+        <div class="a-actions">
+          <select class="btn btn-sm" onchange="updateStatus('${a.id}',this.value)" style="border-left:2px solid ${SDOT[a.status]};cursor:pointer">
+            ${['To-do','In progress','Done','Blocked'].map(s=>`<option ${a.status===s?'selected':''}>${s}</option>`).join('')}
+          </select>
+          <button class="btn btn-sm btn-del" onclick="deleteActivity('${a.id}')"><i class="ti ti-trash"></i></button>
+        </div>
+      </div>
+      <div class="prog-wrap">
+        <div class="prog-lbl"><span>Progress</span><span style="color:${bc};font-family:'DM Mono',monospace">${p}%</span></div>
+        <div class="prog-track"><div class="prog-fill" style="width:${p}%;background:${bc}"></div></div>
+      </div>
+      <div class="prog-row">
+        <input type="range" id="prog-${a.id}" min="0" max="100" value="${p}" step="1"
+          oninput="this.nextElementSibling.textContent=this.value+'%'" style="accent-color:${bc}">
+        <span style="color:${bc}">${p}%</span>
+        <button class="btn btn-sm" onclick="updateProgress('${a.id}')" style="border-color:${bc};color:${bc}">Set</button>
+      </div>
+      <div style="margin-top:8px;display:flex;align-items:center;gap:7px">
+        <i class="ti ti-target" style="font-size:12px;color:var(--purple);flex-shrink:0"></i>
+        <select class="btn btn-sm" onchange="relinkActivity('${a.id}',this.value)" style="font-size:11px;border-color:var(--purple-dim);color:var(--purple);background:var(--purple-bg)">${goalOpts.replace(`value="${a.goalId||''}"`,`value="${a.goalId||''}" selected`)}</select>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ---- GOALS ---- */
+function addGoal(){
+  const t=document.getElementById('goal-title').value.trim();
+  const target=parseFloat(document.getElementById('goal-target').value)||100;if(!t)return;
+  const g={id:uid(),title:t,category:document.getElementById('goal-cat').value,
+    target,current:0,unit:document.getElementById('goal-unit').value||'',
+    deadline:document.getElementById('goal-deadline').value,updatedTs:Date.now(),ts:Date.now()};
+  db.goals.unshift(g);
+  db.log.unshift({id:uid(),text:`New goal: ${t} (target ${target} ${g.unit})`,tag:'Milestone',goalId:g.id,ts:Date.now()});
+  save();['goal-title','goal-target','goal-unit','goal-deadline'].forEach(i=>document.getElementById(i).value='');
+  renderGoals();populateGoalSelects();
+}
+
+function updateGoalProgress(id){
+  const g=db.goals.find(x=>x.id===id);if(!g)return;
+  const val=parseFloat(document.getElementById('gprog-'+id).value)||0;
+  g.current=Math.min(g.target,Math.max(0,val));g.updatedTs=Date.now();
+  db.log.unshift({id:uid(),text:`Goal "${g.title}": ${g.current}/${g.target} ${g.unit}`,tag:'Update',goalId:g.id,ts:Date.now()});
+  save();renderGoals();
+}
+
+function deleteGoal(id){
+  db.activities.forEach(a=>{if(a.goalId===id)a.goalId=null});
+  db.goals=db.goals.filter(x=>x.id!==id);
+  save();renderGoals();populateGoalSelects();
+}
+
+function openGoalLogModal(goalId){
+  const g=db.goals.find(x=>x.id===goalId);if(!g)return;
+  document.getElementById('modal-goal-name').textContent='Log for: '+g.title;
+  document.getElementById('modal-goal-id').value=goalId;
+  document.getElementById('modal-log-text').value='';
+  document.getElementById('modal-log-tag').value='Update';
+  document.getElementById('log-modal').classList.add('open');
+  setTimeout(()=>document.getElementById('modal-log-text').focus(),100);
+}
+
+function closeModal(){document.getElementById('log-modal').classList.remove('open');}
+
+function submitGoalLog(){
+  const goalId=document.getElementById('modal-goal-id').value;
+  const text=document.getElementById('modal-log-text').value.trim();if(!text)return;
+  const tag=document.getElementById('modal-log-tag').value;
+  const g=db.goals.find(x=>x.id===goalId);
+  db.log.unshift({id:uid(),text:`[${g?g.title:'Goal'}] ${text}`,tag,goalId,ts:Date.now()});
+  if(g){g.updatedTs=Date.now();}
+  save();closeModal();renderGoals();renderLog();
+  showToast('Log entry added to goal');
+}
+
+function renderGoals(){
+  const list=document.getElementById('goals-list');
+  const sorted=[...db.goals].sort((a,b)=>(b.updatedTs||b.ts)-(a.updatedTs||a.ts));
+  if(!sorted.length){list.innerHTML=`<div class="empty"><i class="ti ti-target"></i>No goals yet.</div>`;return;}
+  list.innerHTML=sorted.map(g=>{
+    const p=Math.round(g.target>0?(g.current/g.target)*100:0);
+    const bc=p>=100?'#3ddc84':p>=60?'#f5a623':'#ff5c5c';
+    const bgc=p>=100?'var(--green-bg)':p>=60?'var(--orange-bg)':'var(--red-bg)';
+    const linkedActs=db.activities.filter(a=>a.goalId===g.id).sort((a,b)=>(b.updatedTs||b.ts)-(a.updatedTs||a.ts));
+    const linkedLogs=db.log.filter(l=>l.goalId===g.id).slice(0,5);
+    const actCount=linkedActs.length;
+    const logCount=db.log.filter(l=>l.goalId===g.id).length;
+    return`<div class="g-item" style="border-left-color:${bc}">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:5px">
+        <div>
+          <div class="g-title">${g.title}</div>
+          <div class="g-meta">${g.category}${g.deadline?' · Due '+fmtDate(g.deadline):''}
+            <span class="ts-mono">· ${fmtTS(g.updatedTs||g.ts)}</span>
+            <span style="color:var(--purple);margin-left:6px"><i class="ti ti-checklist" style="font-size:10px;vertical-align:-1px"></i> ${actCount} activit${actCount===1?'y':'ies'}</span>
+            <span style="color:var(--blue);margin-left:6px"><i class="ti ti-notes" style="font-size:10px;vertical-align:-1px"></i> ${logCount} log${logCount===1?'':'s'}</span>
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:center;flex-shrink:0">
+          <span style="background:${bgc};color:${bc};font-size:11px;font-weight:500;padding:2px 9px;border-radius:12px;font-family:'DM Mono',monospace">${p}%</span>
+          <button class="btn btn-sm" onclick="openGoalLogModal('${g.id}')" style="border-color:var(--purple-dim);color:var(--purple);background:var(--purple-bg)" title="Add log entry to this goal">
+            <i class="ti ti-notes"></i> Log
+          </button>
+          <button class="btn btn-sm btn-del" onclick="deleteGoal('${g.id}')"><i class="ti ti-trash"></i></button>
+        </div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+        <div class="g-prog-track"><div class="g-prog-fill" style="width:${p}%;background:${bc}"></div></div>
+        <span style="font-size:12px;font-weight:500;min-width:34px;text-align:right;color:${bc};font-family:'DM Mono',monospace">${p}%</span>
+      </div>
+      <div style="font-size:11px;color:var(--txt3);margin-bottom:9px">${g.current} / ${g.target} ${g.unit}</div>
+      <div style="display:flex;gap:7px;align-items:center;margin-bottom:${actCount||logCount?'0':'4px'}">
+        <input type="number" id="gprog-${g.id}" placeholder="Update current value"
+          style="max-width:150px;font-size:12px;padding:6px 10px;border-radius:var(--radius);border:1px solid var(--border);background:var(--bg2);color:var(--txt);font-family:'DM Sans',sans-serif;outline:none">
+        <button class="btn btn-sm" onclick="updateGoalProgress('${g.id}')" style="border-color:${bc};color:${bc}">Update</button>
+      </div>
+      ${actCount>0?`<div class="linked-section">
+        <div class="linked-hdr"><i class="ti ti-checklist" style="color:var(--purple)"></i>Linked activities (${actCount})</div>
+        ${linkedActs.map(a=>`<div class="linked-item">
+          <div style="width:2px;height:20px;border-radius:1px;background:${SDOT[a.status]};flex-shrink:0"></div>
+          <span class="linked-item-title">${a.title}</span>
+          <div style="display:flex;align-items:center;gap:6px;flex-shrink:0">
+            ${sBadge(a.status)}
+            <span style="font-size:10px;font-family:'DM Mono',monospace;color:${barClr(a.status,pct(a))}">${pct(a)}%</span>
+          </div>
+        </div>`).join('')}
+      </div>`:''}
+      ${logCount>0?`<div class="linked-section">
+        <div class="linked-hdr"><i class="ti ti-notes" style="color:var(--blue)"></i>Recent log entries (${logCount} total)</div>
+        ${linkedLogs.map(l=>`<div class="linked-log-item">
+          <div class="linked-log-text">${l.text}</div>
+          <div class="linked-log-meta"><span style="color:${LTC[l.tag]||'#4a556e'}">${l.tag}</span> · ${fmtTS(l.ts)}</div>
+        </div>`).join('')}
+        ${logCount>5?`<div style="font-size:10px;color:var(--txt3);padding:4px 0">+${logCount-5} more in Log tab</div>`:''}
+      </div>`:''}
+    </div>`;
+  }).join('');
+}
+
+/* ---- LOG ---- */
+function addLog(){
+  const t=document.getElementById('log-entry').value.trim();if(!t)return;
+  const goalId=document.getElementById('log-goal-link').value||null;
+  const g=goalName(goalId);
+  const due=document.getElementById('log-due').value||null;
+  db.log.unshift({id:uid(),text:t+(g?' [Goal: '+g+']':''),tag:document.getElementById('log-tag').value,goalId,due,ts:Date.now()});
+  if(goalId){const gObj=db.goals.find(x=>x.id===goalId);if(gObj)gObj.updatedTs=Date.now();}
+  save();
+  document.getElementById('log-entry').value='';
+  document.getElementById('log-goal-link').value='';
+  document.getElementById('log-due').value='';
+  renderLog();
+}
+
+function deleteLog(id){
+  db.log=db.log.filter(x=>x.id!==id);
+  save();renderLog();
+}
+
+function renderLog(){
+  const list=document.getElementById('log-list');
+  const fg=document.getElementById('log-filter-goal').value;
+  let entries=fg?db.log.filter(l=>l.goalId===fg):db.log;
+  if(!entries.length){list.innerHTML=`<div class="empty"><i class="ti ti-timeline"></i>No log entries yet.</div>`;return;}
+  list.innerHTML=entries.slice(0,100).map(e=>{
+    const gn=goalName(e.goalId);
+    const overdue=e.due&&e.due<today()&&e.tag!=='Milestone';
+    return`<div class="log-entry">
+      <div class="log-dot" style="background:${LTC[e.tag]||'#4a556e'}"></div>
+      <div style="flex:1">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:2px;flex-wrap:wrap">
+          <span style="font-size:12px;font-weight:500;color:${LTC[e.tag]||'#4a556e'}">${e.tag}</span>
+          <span class="log-ts">${fmtTS(e.ts)}</span>
+          <span class="ts-mono">(${timeSince(e.ts)})</span>
+          ${e.due?`<span style="font-size:11px;font-weight:500;padding:1px 7px;border-radius:9px;background:${overdue?'var(--red-bg)':'var(--blue-bg)'};color:${overdue?'var(--red)':'var(--blue)'};border:1px solid ${overdue?'var(--red-dim)':'var(--blue-dim)'}"><i class="ti ti-calendar" style="font-size:10px;vertical-align:-1px"></i> ${overdue?'Overdue: ':'Due: '}${fmtDate(e.due)}</span>`:''}
+          ${gn?`<span class="log-goal-link"><i class="ti ti-target" style="font-size:9px"></i>${gn}</span>`:''}
+        </div>
+        <div style="font-size:13px;color:var(--txt)">${e.text}</div>
+      </div>
+      <button class="btn btn-sm btn-del" onclick="deleteLog('${e.id}')" title="Delete this entry" style="flex-shrink:0;margin-top:2px"><i class="ti ti-trash"></i></button>
+    </div>`;
+  }).join('');
+}
+
+/* ---- DASHBOARD ---- */
+function renderDashboardStats(){
+  const total=db.activities.length,done=db.activities.filter(a=>a.status==='Done').length,
+    inprog=db.activities.filter(a=>a.status==='In progress').length,
+    blocked=db.activities.filter(a=>a.status==='Blocked').length;
+  document.getElementById('stats-grid').innerHTML=`
+    <div class="stat-card s-total"><div class="stat-lbl">Total</div><div class="stat-val">${total}</div><div class="stat-sub">activities</div></div>
+    <div class="stat-card s-done"><div class="stat-lbl"><i class="ti ti-check" style="vertical-align:-1px;margin-right:2px"></i>Done</div><div class="stat-val">${done}</div><div class="stat-sub">${total?Math.round(done/total*100):0}% complete</div></div>
+    <div class="stat-card s-prog"><div class="stat-lbl"><i class="ti ti-clock" style="vertical-align:-1px;margin-right:2px"></i>In progress</div><div class="stat-val">${inprog}</div><div class="stat-sub">active now</div></div>
+    <div class="stat-card s-blk"><div class="stat-lbl"><i class="ti ti-alert-triangle" style="vertical-align:-1px;margin-right:2px"></i>Blocked</div><div class="stat-val">${blocked}</div><div class="stat-sub">need attention</div></div>`;
+}
+
+function renderDonut(){
+  const canvas=document.getElementById('donut-canvas');if(!canvas)return;
+  const ctx=canvas.getContext('2d');
+  const counts={'To-do':0,'In progress':0,'Done':0,'Blocked':0};
+  db.activities.forEach(a=>{if(counts[a.status]!==undefined)counts[a.status]++;});
+  const colors={'To-do':'#4a556e','In progress':'#f5a623','Done':'#3ddc84','Blocked':'#ff5c5c'};
+  const total=Object.values(counts).reduce((a,b)=>a+b,0);
+  const cx=75,cy=75,r=58,ri=36;
+  ctx.clearRect(0,0,150,150);
+  if(!total){ctx.beginPath();ctx.arc(cx,cy,r,0,Math.PI*2);ctx.strokeStyle='#2e3545';ctx.lineWidth=16;ctx.stroke();}
+  else{
+    let angle=-Math.PI/2;
+    Object.entries(counts).forEach(([k,v])=>{
+      if(!v)return;const sl=(v/total)*Math.PI*2;
+      ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,r,angle,angle+sl);ctx.closePath();
+      ctx.fillStyle=colors[k];ctx.fill();angle+=sl;
+    });
+    ctx.beginPath();ctx.arc(cx,cy,ri,0,Math.PI*2);ctx.fillStyle='#13161b';ctx.fill();
+    ctx.fillStyle='#e8ecf4';ctx.font='bold 18px DM Mono,monospace';
+    ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(total,cx,cy);
+  }
+  document.getElementById('donut-legend').innerHTML=Object.entries(counts).map(([k,v])=>`
+    <div class="leg-item"><div class="leg-dot" style="background:${colors[k]}"></div>${k}: <strong style="color:var(--txt);font-family:'DM Mono',monospace">${v}</strong></div>`).join('');
+}
+
+function renderWeekBars(){
+  const days=[];for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);days.push(d.toISOString().slice(0,10));}
+  const counts=days.map(d=>({d,count:db.activities.filter(a=>a.created===d).length}));
+  const max=Math.max(...counts.map(x=>x.count),1);
+  const dl=['Su','Mo','Tu','We','Th','Fr','Sa'];
+  document.getElementById('week-bars').innerHTML=counts.map(({d,count})=>{
+    const day=dl[new Date(d+'T12:00:00').getDay()];const isTd=d===today();
+    return`<div class="bar-row"><span class="bar-lbl" style="${isTd?'color:var(--green);font-weight:500':''}">${day}</span>
+      <div class="bar-outer"><div class="bar-inner" style="width:${Math.round((count/max)*100)}%;background:${isTd?'#3ddc84':'#1a4030'}"></div></div>
+      <span class="bar-val">${count}</span></div>`;
+  }).join('');
+}
+
+function renderTodayList(){
+  const el=document.getElementById('today-list');
+  const items=db.activities.filter(a=>a.created===today()).sort((a,b)=>(b.updatedTs||b.ts)-(a.updatedTs||a.ts));
+  if(!items.length){el.innerHTML=`<div style="font-size:12px;color:var(--txt3);padding:8px 0">No activities added today yet.</div>`;return;}
+  el.innerHTML=items.map(a=>{
+    const gn=goalName(a.goalId);
+    return`<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--border)">
+      <div style="display:flex;align-items:center;gap:9px;flex:1;min-width:0">
+        <div style="width:2px;height:26px;border-radius:1px;background:${SDOT[a.status]};flex-shrink:0"></div>
+        <div style="min-width:0">
+          <div style="font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${a.title}</div>
+          ${gn?`<div style="font-size:10px;color:var(--purple);margin-top:1px"><i class="ti ti-target" style="font-size:9px;vertical-align:-1px"></i> ${gn}</div>`:''}
+        </div>
+      </div>
+      ${sBadge(a.status)}
+    </div>`;
+  }).join('');
+}
+
+function renderDashboard(){renderDashboardStats();renderDonut();renderWeekBars();renderTodayList();}
+
+/* ---- FILE SAVE / LOAD ---- */
+function saveToFile(){
+  const ts=new Date().toISOString();
+  const payload={...db,meta:{appName:'Business Tracker',version:2,exportedAt:ts,
+    exportedAtReadable:new Date().toLocaleString('en-GB'),
+    totalActivities:db.activities.length,totalGoals:db.goals.length,totalLogEntries:db.log.length,
+    summary:{done:db.activities.filter(a=>a.status==='Done').length,
+      inProgress:db.activities.filter(a=>a.status==='In progress').length,
+      blocked:db.activities.filter(a=>a.status==='Blocked').length,
+      todo:db.activities.filter(a=>a.status==='To-do').length}}};
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  const fname=`business-tracker_${tsStamp()}.json`;
+  a.href=url;a.download=fname;document.body.appendChild(a);a.click();
+  setTimeout(()=>{URL.revokeObjectURL(url);a.remove();},1000);
+  currentFileName=fname;unsaved=false;updateFileBar();
+  showNote('json-note','success',`Saved as <strong>${fname}</strong> — upload to Claude or Copilot for AI analysis`);
+}
+
+function loadFromFile(){
+  const input=document.createElement('input');input.type='file';input.accept='.json';
+  input.onchange=e=>{
+    const file=e.target.files[0];if(!file)return;
+    const reader=new FileReader();
+    reader.onload=ev=>{
+      try{
+        const parsed=JSON.parse(ev.target.result);
+        if(!parsed.activities||!Array.isArray(parsed.activities))throw new Error();
+        db.activities=parsed.activities||[];db.goals=parsed.goals||[];db.log=parsed.log||[];
+        localStorage.setItem(DB_KEY,JSON.stringify(db));
+        currentFileName=file.name;unsaved=false;updateFileBar();
+        populateGoalSelects();renderDashboard();renderActivities();renderGoals();renderLog();
+        showNote('json-note','success',`Loaded <strong>${file.name}</strong> — ${db.activities.length} activities, ${db.goals.length} goals`);
+      }catch(err){showNote('json-note','error','Invalid file — must be a Business Tracker JSON file');}
+    };
+    reader.readAsText(file);
+  };
+  document.body.appendChild(input);input.click();input.remove();
+}
+
+/* ---- EXCEL EXPORT ---- */
+function tsStamp(){
+  const d=new Date();
+  const dd=String(d.getDate()).padStart(2,'0'),mm=String(d.getMonth()+1).padStart(2,'0'),yyyy=d.getFullYear();
+  const hh=String(d.getHours()).padStart(2,'0'),min=String(d.getMinutes()).padStart(2,'0'),ss=String(d.getSeconds()).padStart(2,'0');
+  return `${yyyy}-${mm}-${dd}_${hh}-${min}-${ss}`;
+}
+
+function xlRgb(hex){return hex.replace('#','');}
+function xlFill(hex){return{patternType:'solid',fgColor:{rgb:xlRgb(hex)}};}
+function xlFont(hex,bold,sz){return{color:{rgb:xlRgb(hex)},bold:!!bold,sz:sz||11};}
+function xlBorder(){const s={style:'thin',color:{rgb:'2E3545'}};return{top:s,bottom:s,left:s,right:s};}
+function xlBorderLight(){const s={style:'thin',color:{rgb:'E5E7EB'}};return{top:s,bottom:s,left:s,right:s};}
+
+const XL_STATUS_BG={'To-do':'F1EFE8','In progress':'FAEEDA','Done':'EAF3DE','Blocked':'FCEBEB'};
+const XL_STATUS_FG={'To-do':'444441','In progress':'633806','Done':'27500A','Blocked':'791F1F'};
+const XL_PRIO_BG={'Critical':'FCEBEB','High':'FAEEDA','Medium':'E6F1FB','Low':'F1EFE8'};
+const XL_PRIO_FG={'Critical':'791F1F','High':'633806','Medium':'0C447C','Low':'444441'};
+const XL_TAG_BG={Milestone:'EAF3DE',Blocker:'FCEBEB',Decision:'E6F1FB',Update:'FAEEDA',Note:'F1EFE8'};
+const XL_TAG_FG={Milestone:'27500A',Blocker:'791F1F',Decision:'0C447C',Update:'633806',Note:'444441'};
+
+function applyXlStyles(ws,data,colWidths){
+  const range=XLSX.utils.decode_range(ws['!ref']);
+  for(let R=range.s.r;R<=range.e.r;R++){
+    for(let C=range.s.c;C<=range.e.c;C++){
+      const addr=XLSX.utils.encode_cell({r:R,c:C});
+      if(!ws[addr])continue;
+      ws[addr].s=ws[addr].s||{};
+      ws[addr].s.alignment={vertical:'center',wrapText:false};
+    }
+  }
+  if(colWidths)ws['!cols']=colWidths.map(w=>({wch:w}));
+}
+
+function setCellStyle(ws,r,c,style){
+  const addr=XLSX.utils.encode_cell({r,c});
+  if(!ws[addr])ws[addr]={t:'s',v:''};
+  ws[addr].s=style;
+}
+
+function styleSheet(ws,headers,dataRows,headerRowIdx,colWidths,styleRowFn){
+  applyXlStyles(ws,null,colWidths);
+  const range=XLSX.utils.decode_range(ws['!ref']);
+  for(let C=range.s.c;C<=range.e.c;C++){
+    const addr=XLSX.utils.encode_cell({r:headerRowIdx,c:C});
+    if(!ws[addr])continue;
+    ws[addr].s={fill:xlFill('#1A1E26'),font:xlFont('8E9AB5',true,10),border:xlBorder(),alignment:{horizontal:'left',vertical:'center'}};
+  }
+  for(let R=headerRowIdx+1;R<=range.e.r;R++){
+    if(styleRowFn)styleRowFn(ws,R,range.e.c);
+    else{
+      for(let C=range.s.c;C<=range.e.c;C++){
+        const addr=XLSX.utils.encode_cell({r:R,c:C});
+        if(!ws[addr])continue;
+        const even=R%2===0;
+        ws[addr].s={...(ws[addr].s||{}),fill:xlFill(even?'FFFFFF':'F9FAFB'),border:xlBorderLight(),alignment:{vertical:'center',wrapText:true}};
+      }
+    }
+  }
+  const titleAddr=XLSX.utils.encode_cell({r:0,c:0});
+  if(ws[titleAddr]){ws[titleAddr].s={fill:xlFill('0D0F12'),font:xlFont('3DDC84',true,13),alignment:{horizontal:'left',vertical:'center'}};}
+  const metaAddr=XLSX.utils.encode_cell({r:1,c:0});
+  if(ws[metaAddr]){ws[metaAddr].s={fill:xlFill('13161B'),font:xlFont('8E9AB5',false,9),alignment:{horizontal:'left',vertical:'center'}};}
+}
+
+function exportExcel(){
+  if(!window.XLSX){showNote('xl-note','error','Library not loaded. Check internet connection.');return;}
+  const now=new Date();const ts=now.toLocaleString('en-GB');const stamp=tsStamp();
+
+  /* --- ACTIVITIES SHEET --- */
+  const actSorted=[...db.activities].sort((a,b)=>(b.updatedTs||b.ts)-(a.updatedTs||a.ts));
+  const actData=[
+    ['Business Tracker — Activities'],
+    ['Generated: '+ts],
+    [],
+    ['Title','Category','Priority','Status','Progress %','Due Date','Linked Goal','Notes','Created','Last Updated'],
+    ...actSorted.map(a=>[a.title,a.category,a.priority,a.status,pct(a),fmtDate(a.due),goalName(a.goalId)||'',a.notes||'',fmtDate(a.created),fmtTS(a.updatedTs||a.ts)])
+  ];
+  const wsAct=XLSX.utils.aoa_to_sheet(actData);
+  styleSheet(wsAct,null,null,3,[30,14,10,14,10,10,22,30,10,18],(ws,R,maxC)=>{
+    const rowData=actSorted[R-4];if(!rowData)return;
+    const st=rowData.status;const pr=rowData.priority;const p=pct(rowData);
+    const rowBg=R%2===0?'FFFFFF':'FAFBFC';
+    for(let C=0;C<=maxC;C++){
+      const addr=XLSX.utils.encode_cell({r:R,c:C});
+      if(!ws[addr])ws[addr]={t:'s',v:''};
+      let cellStyle={fill:xlFill(rowBg),border:xlBorderLight(),alignment:{vertical:'center',wrapText:C===7}};
+      if(C===2){cellStyle.fill=xlFill(XL_PRIO_BG[pr]||'F1EFE8');cellStyle.font=xlFont(XL_PRIO_FG[pr]||'444441',true,10);}
+      else if(C===3){cellStyle.fill=xlFill(XL_STATUS_BG[st]||'F1EFE8');cellStyle.font=xlFont(XL_STATUS_FG[st]||'444441',true,10);}
+      else if(C===4){
+        const pClr=p>=70?'27500A':p>=30?'633806':'791F1F';
+        const pBg=p>=70?'EAF3DE':p>=30?'FAEEDA':'FCEBEB';
+        cellStyle.fill=xlFill(pBg);cellStyle.font=xlFont(pClr,true,10);
+      }
+      else if(C===6&&rowData.goalId){cellStyle.font=xlFont('7C66DC',false,10);}
+      ws[addr].s=cellStyle;
+    }
+  });
+
+  /* --- GOALS SHEET --- */
+  const gSorted=[...db.goals].sort((a,b)=>(b.updatedTs||b.ts)-(a.updatedTs||a.ts));
+  const goalData=[
+    ['Business Tracker — Goals'],
+    ['Generated: '+ts],
+    [],
+    ['Title','Category','Target','Current','Unit','Progress %','Deadline','Activities','Last Updated'],
+    ...gSorted.map(g=>[g.title,g.category,g.target,g.current,g.unit,
+      Math.round(g.target>0?(g.current/g.target)*100:0),
+      fmtDate(g.deadline),db.activities.filter(a=>a.goalId===g.id).length,fmtTS(g.updatedTs||g.ts)])
+  ];
+  const wsGoal=XLSX.utils.aoa_to_sheet(goalData);
+  styleSheet(wsGoal,null,null,3,[30,14,10,10,10,12,12,10,18],(ws,R,maxC)=>{
+    const rowData=gSorted[R-4];if(!rowData)return;
+    const p=Math.round(rowData.target>0?(rowData.current/rowData.target)*100:0);
+    const rowBg=R%2===0?'FFFFFF':'FAFBFC';
+    for(let C=0;C<=maxC;C++){
+      const addr=XLSX.utils.encode_cell({r:R,c:C});
+      if(!ws[addr])ws[addr]={t:'s',v:''};
+      let cellStyle={fill:xlFill(rowBg),border:xlBorderLight(),alignment:{vertical:'center'}};
+      if(C===5){
+        const pClr=p>=100?'27500A':p>=60?'633806':'791F1F';
+        const pBg=p>=100?'EAF3DE':p>=60?'FAEEDA':'FCEBEB';
+        cellStyle.fill=xlFill(pBg);cellStyle.font=xlFont(pClr,true,11);
+      }
+      ws[addr].s=cellStyle;
+    }
+  });
+
+  /* --- LOG SHEET --- */
+  const logData=[
+    ['Business Tracker — Activity Log'],
+    ['Generated: '+ts],
+    [],
+    ['Timestamp','Tag','Entry','Linked Goal'],
+    ...db.log.slice(0,500).map(e=>[fmtTS(e.ts),e.tag,e.text,goalName(e.goalId)||''])
+  ];
+  const wsLog=XLSX.utils.aoa_to_sheet(logData);
+  styleSheet(wsLog,null,null,3,[18,12,50,22],(ws,R,maxC)=>{
+    const rowData=db.log[R-4];if(!rowData)return;
+    const rowBg=R%2===0?'FFFFFF':'FAFBFC';
+    for(let C=0;C<=maxC;C++){
+      const addr=XLSX.utils.encode_cell({r:R,c:C});
+      if(!ws[addr])ws[addr]={t:'s',v:''};
+      let cellStyle={fill:xlFill(rowBg),border:xlBorderLight(),alignment:{vertical:'center',wrapText:C===2}};
+      if(C===1){const tg=rowData.tag;cellStyle.fill=xlFill(XL_TAG_BG[tg]||'F1EFE8');cellStyle.font=xlFont(XL_TAG_FG[tg]||'444441',true,10);}
+      else if(C===3&&rowData.goalId){cellStyle.font=xlFont('7C66DC',false,10);}
+      ws[addr].s=cellStyle;
+    }
+  });
+
+  /* --- GOAL RELATIONSHIPS SHEET --- */
+  const relData=[['Business Tracker — Goal Relationships'],['Generated: '+ts],[]];
+  db.goals.sort((a,b)=>(b.updatedTs||b.ts)-(a.updatedTs||a.ts)).forEach(g=>{
+    const p=Math.round(g.target>0?(g.current/g.target)*100:0);
+    relData.push([g.title,g.category,'Progress: '+p+'%','Target: '+g.target+' '+g.unit,'Deadline: '+fmtDate(g.deadline),'']);
+    relData.push(['','','Type','Title / Entry','Status / Tag','Progress / Time']);
+    const acts=db.activities.filter(a=>a.goalId===g.id).sort((a,b)=>(b.updatedTs||b.ts)-(a.updatedTs||a.ts));
+    const logs=db.log.filter(l=>l.goalId===g.id);
+    acts.forEach(a=>relData.push(['','','Activity',a.title,a.status,pct(a)+'%']));
+    logs.forEach(l=>relData.push(['','','Log',l.text,l.tag,fmtTS(l.ts)]));
+    if(!acts.length&&!logs.length)relData.push(['','','','(no linked items)','','']);
+    relData.push([]);
+  });
+  const wsRel=XLSX.utils.aoa_to_sheet(relData);
+  const relRange=XLSX.utils.decode_range(wsRel['!ref']);
+  let curGoalIdx=2;
+  for(let R=3;R<=relRange.e.r;R++){
+    const c0=wsRel[XLSX.utils.encode_cell({r:R,c:0})];
+    const c2=wsRel[XLSX.utils.encode_cell({r:R,c:2})];
+    const isGoalRow=c0&&c0.v&&String(c0.v).trim()!=='';
+    const isSubHeader=c2&&c2.v==='Type';
+    const typeCell=c2?String(c2.v||''):'';
+    for(let C=0;C<=5;C++){
+      const addr=XLSX.utils.encode_cell({r:R,c:C});
+      if(!wsRel[addr])wsRel[addr]={t:'s',v:''};
+      let s={border:xlBorderLight(),alignment:{vertical:'center'}};
+      if(isGoalRow){s.fill=xlFill('0D0F12');s.font=xlFont(C===0?'3DDC84':'8E9AB5',C===0,C===0?12:9);}
+      else if(isSubHeader){s.fill=xlFill('1A1E26');s.font=xlFont('8E9AB5',true,9);}
+      else if(typeCell==='Activity'){
+        const stCell=wsRel[XLSX.utils.encode_cell({r:R,c:4})];
+        const st=stCell?String(stCell.v||''):'';
+        s.fill=xlFill(C===4?(XL_STATUS_BG[st]||'F1EFE8'):(R%2===0?'FFFFFF':'FAFBFC'));
+        if(C===4)s.font=xlFont(XL_STATUS_FG[st]||'444441',true,10);
+        if(C===2){s.fill=xlFill('E6F1FB');s.font=xlFont('0C447C',true,9);}
+      }else if(typeCell==='Log'){
+        const tgCell=wsRel[XLSX.utils.encode_cell({r:R,c:4})];
+        const tg=tgCell?String(tgCell.v||''):'';
+        s.fill=xlFill(C===4?(XL_TAG_BG[tg]||'F1EFE8'):(R%2===0?'FFFFFF':'FAFBFC'));
+        if(C===4)s.font=xlFont(XL_TAG_FG[tg]||'444441',true,9);
+        if(C===2){s.fill=xlFill('F0ECF9');s.font=xlFont('7C66DC',true,9);}
+      }else{s.fill=xlFill('FFFFFF');}
+      wsRel[addr].s=s;
+    }
+  }
+  wsRel['!cols']=[{wch:28},{wch:14},{wch:10},{wch:42},{wch:14},{wch:16}];
+
+  const wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,wsAct,'Activities');
+  XLSX.utils.book_append_sheet(wb,wsGoal,'Goals');
+  XLSX.utils.book_append_sheet(wb,wsLog,'Log');
+  XLSX.utils.book_append_sheet(wb,wsRel,'Goal Relationships');
+  const fname=`business-tracker_${stamp}.xlsx`;
+  const wbOut=XLSX.write(wb,{bookType:'xlsx',type:'array'});
+  const xlBlob=new Blob([wbOut],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  const xlUrl=URL.createObjectURL(xlBlob);
+  const xlA=document.createElement('a');
+  xlA.href=xlUrl;xlA.download=fname;
+  document.body.appendChild(xlA);xlA.click();
+  setTimeout(()=>{URL.revokeObjectURL(xlUrl);xlA.remove();},1500);
+  showNote('xl-note','success',`<i class="ti ti-check" style="color:var(--green)"></i> <strong>${fname}</strong> saved to Downloads folder`);
+}
+
+/* ---- PDF EXPORT ---- */
+function exportPDF(){
+  const ts=new Date().toLocaleString('en-GB');const stamp=tsStamp();
+  const sorted=[...db.activities].sort((a,b)=>(b.updatedTs||b.ts)-(a.updatedTs||a.ts));
+  const gsorted=[...db.goals].sort((a,b)=>(b.updatedTs||b.ts)-(a.updatedTs||a.ts));
+  const sClr={'To-do':'#888780','In progress':'#f5a623','Done':'#3ddc84','Blocked':'#ff5c5c'};
+  const sBg={'To-do':'#f1efe8','In progress':'#faeeda','Done':'#eaf3de','Blocked':'#fcebeb'};
+  const sBrd={'To-do':'#d3d1c7','In progress':'#ef9f27','Done':'#97c459','Blocked':'#f09595'};
+  const prClr={'Critical':'#791f1f','High':'#633806','Medium':'#0c447c','Low':'#444441'};
+  const prBg={'Critical':'#fcebeb','High':'#faeeda','Medium':'#e6f1fb','Low':'#f1efe8'};
+  const tgClr={Milestone:'#27500a',Blocker:'#791f1f',Decision:'#0c447c',Update:'#633806',Note:'#444441'};
+  const tgBg={Milestone:'#eaf3de',Blocker:'#fcebeb',Decision:'#e6f1fb',Update:'#faeeda',Note:'#f1efe8'};
+
+  const goalSections=gsorted.map(g=>{
+    const acts=db.activities.filter(a=>a.goalId===g.id).sort((a,b)=>(b.updatedTs||b.ts)-(a.updatedTs||a.ts));
+    const logs=db.log.filter(l=>l.goalId===g.id);
+    const p=Math.round(g.target>0?(g.current/g.target)*100:0);
+    const gc=p>=100?'#3ddc84':p>=60?'#f5a623':'#ff5c5c';
+    const gcBg=p>=100?'#eaf3de':p>=60?'#faeeda':'#fcebeb';
+    const gcBrd=p>=100?'#3b6d11':p>=60?'#ba7517':'#a32d2d';
+    return`<div class="goal-block">
+      <div class="goal-hdr">
+        <div style="flex:1">
+          <div class="goal-name">${g.title}</div>
+          <div class="goal-meta">${g.category}${g.deadline?' &nbsp;·&nbsp; Due: '+fmtDate(g.deadline):''} &nbsp;·&nbsp; ${db.activities.filter(a=>a.goalId===g.id).length} activities &nbsp;·&nbsp; ${logs.length} logs</div>
+        </div>
+        <div style="text-align:right">
+          <div class="pct-pill" style="background:${gcBg};color:${gc};border:1px solid ${gcBrd}">${p}%</div>
+          <div style="font-size:10px;color:#888;margin-top:3px;font-family:monospace">${g.current} / ${g.target} ${g.unit}</div>
+        </div>
+      </div>
+      <div class="goal-prog-bg"><div class="goal-prog-fill" style="width:${p}%;background:${gc}"></div></div>
+      ${acts.length?`<table class="sub-table"><tr><th>Activity</th><th>Category</th><th>Priority</th><th>Status</th><th>Progress</th><th>Due</th></tr>
+        ${acts.map(a=>{const p2=pct(a);return`<tr>
+          <td>${a.title}${a.notes?`<div class="note-text">${a.notes}</div>`:''}</td>
+          <td>${a.category}</td>
+          <td><span class="pill" style="background:${prBg[a.priority]||'#f1efe8'};color:${prClr[a.priority]||'#444'}">${a.priority}</span></td>
+          <td><span class="pill" style="background:${sBg[a.status]};color:${sClr[a.status]};border:1px solid ${sBrd[a.status]}">${a.status}</span></td>
+          <td><div class="mini-prog-bg"><div class="mini-prog-fill" style="width:${p2}%;background:${sClr[a.status]}"></div></div><span style="font-size:9px;color:${sClr[a.status]};font-family:monospace">${p2}%</span></td>
+          <td class="ts-cell">${fmtDate(a.due)}</td></tr>`}).join('')}
+        </table>`:''}
+      ${logs.length?`<div class="log-block">
+        ${logs.slice(0,10).map(l=>`<div class="log-row">
+          <span class="log-tag-pill" style="background:${tgBg[l.tag]||'#f1efe8'};color:${tgClr[l.tag]||'#444'}">${l.tag}</span>
+          <span class="log-text">${l.text}</span>
+          <span class="ts-cell" style="margin-left:auto;flex-shrink:0">${fmtTS(l.ts)}</span>
+        </div>`).join('')}
+        ${logs.length>10?`<div style="font-size:10px;color:#aaa;padding:3px 0">+${logs.length-10} more log entries…</div>`:''}
+      </div>`:''}
+    </div>`;
+  }).join('');
+
+  const html=`<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Business Tracker — ${ts}</title>
+<style>
+*{box-sizing:border-box}
+body{font-family:'Segoe UI',Arial,sans-serif;max-width:980px;margin:0 auto;padding:32px;color:#111;background:#fff;font-size:12px}
+.cover{background:#0d0f12;color:#e8ecf4;border-radius:10px;padding:24px 28px;margin-bottom:24px;display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.cover-title{font-size:20px;font-weight:600;color:#3ddc84;letter-spacing:-.3px;margin-bottom:4px}
+.cover-meta{font-size:11px;color:#8e9ab5;font-family:monospace;line-height:1.7}
+.cover-stats{display:flex;gap:16px}
+.cstat{background:#1a1e26;border-radius:8px;padding:10px 16px;text-align:center;border:1px solid #2e3545}
+.cstat-val{font-size:22px;font-weight:600;font-family:monospace}
+.cstat-lbl{font-size:10px;color:#8e9ab5;text-transform:uppercase;letter-spacing:.05em}
+.section-hdr{font-size:11px;font-weight:700;padding:6px 12px;border-radius:6px;text-transform:uppercase;letter-spacing:.07em;margin:24px 0 12px;display:flex;align-items:center;gap:8px}
+.sh-goals{background:#0d2a1a;color:#3ddc84;border:1px solid #1a4030}
+.sh-acts{background:#0d1a2e;color:#5b8ef0;border:1px solid #1a2f50}
+.sh-log{background:#1a1e26;color:#8e9ab5;border:1px solid #2e3545}
+.goal-block{border:1px solid #e5e7eb;border-radius:10px;margin-bottom:14px;overflow:hidden}
+.goal-hdr{display:flex;align-items:flex-start;justify-content:space-between;padding:12px 14px 8px;background:#fafafa;gap:12px}
+.goal-name{font-size:13px;font-weight:600;color:#111;margin-bottom:3px}
+.goal-meta{font-size:10px;color:#888}
+.pct-pill{display:inline-block;font-size:12px;font-weight:700;padding:2px 10px;border-radius:12px;font-family:monospace}
+.goal-prog-bg{height:5px;background:#f0f0f0;margin:0 14px 10px}
+.goal-prog-fill{height:5px}
+.sub-table{width:calc(100% - 28px);margin:0 14px 10px;border-collapse:collapse;font-size:11px}
+.sub-table th{background:#1a1e26;color:#8e9ab5;padding:5px 8px;text-align:left;font-weight:500;font-size:10px;text-transform:uppercase;letter-spacing:.04em}
+.sub-table td{padding:5px 8px;border-bottom:1px solid #f5f5f5;vertical-align:middle}
+.sub-table tr:last-child td{border-bottom:none}
+.sub-table tr:nth-child(even) td{background:#fafbfc}
+.pill{display:inline-block;padding:1px 7px;border-radius:9px;font-size:10px;font-weight:600;white-space:nowrap}
+.mini-prog-bg{height:4px;background:#eee;border-radius:2px;width:60px;display:inline-block;vertical-align:middle;margin-right:4px}
+.mini-prog-fill{height:4px;border-radius:2px}
+.note-text{font-size:10px;color:#888;font-style:italic;margin-top:2px}
+.log-block{margin:0 14px 12px;border:1px solid #f0f0f0;border-radius:6px;overflow:hidden}
+.log-row{display:flex;align-items:baseline;gap:8px;padding:6px 10px;border-bottom:1px solid #f5f5f5;font-size:11px}
+.log-row:last-child{border-bottom:none}
+.log-row:nth-child(even){background:#fafbfc}
+.log-tag-pill{font-size:9px;font-weight:700;padding:1px 6px;border-radius:8px;white-space:nowrap;flex-shrink:0}
+.log-text{color:#333;flex:1;line-height:1.4}
+.ts-cell{font-family:monospace;font-size:10px;color:#aaa;white-space:nowrap}
+.acts-table{width:100%;border-collapse:collapse;margin-bottom:18px;font-size:11px;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden}
+.acts-table th{background:#0d1a2e;color:#5b8ef0;padding:7px 9px;text-align:left;font-weight:500;font-size:10px;text-transform:uppercase;letter-spacing:.05em}
+.acts-table td{padding:6px 9px;border-bottom:1px solid #f0f0f0;vertical-align:middle}
+.acts-table tr:last-child td{border-bottom:none}
+.acts-table tr:nth-child(even) td{background:#fafbfc}
+.log-table{width:100%;border-collapse:collapse;font-size:11px;border:1px solid #e5e7eb;border-radius:8px;overflow:hidden}
+.log-table th{background:#1a1e26;color:#8e9ab5;padding:7px 9px;text-align:left;font-weight:500;font-size:10px;text-transform:uppercase;letter-spacing:.05em}
+.log-table td{padding:6px 9px;border-bottom:1px solid #f0f0f0;vertical-align:top}
+.log-table tr:last-child td{border-bottom:none}
+.log-table tr:nth-child(even) td{background:#fafbfc}
+.goal-tag{display:inline-flex;align-items:center;gap:3px;font-size:10px;font-weight:600;padding:1px 7px;border-radius:9px;background:#f0ecf9;color:#7c66dc}
+.footer{font-size:10px;color:#aaa;margin-top:28px;padding-top:10px;border-top:1px solid #eee;font-family:monospace;display:flex;justify-content:space-between}
+@media print{@page{margin:1.2cm}body{padding:0}.cover{break-inside:avoid}.goal-block{break-inside:avoid}}
+</style></head><body>
+
+<div class="cover">
+  <div>
+    <div class="cover-title">&#9679; Business Tracker</div>
+    <div class="cover-meta">
+      Generated: ${ts}<br>
+      Activities: ${db.activities.length} &nbsp;·&nbsp; Goals: ${db.goals.length} &nbsp;·&nbsp; Log entries: ${db.log.length}
+    </div>
+  </div>
+  <div class="cover-stats">
+    <div class="cstat"><div class="cstat-val" style="color:#3ddc84">${db.activities.filter(a=>a.status==='Done').length}</div><div class="cstat-lbl">Done</div></div>
+    <div class="cstat"><div class="cstat-val" style="color:#f5a623">${db.activities.filter(a=>a.status==='In progress').length}</div><div class="cstat-lbl">In progress</div></div>
+    <div class="cstat"><div class="cstat-val" style="color:#ff5c5c">${db.activities.filter(a=>a.status==='Blocked').length}</div><div class="cstat-lbl">Blocked</div></div>
+    <div class="cstat"><div class="cstat-val" style="color:#8e9ab5">${db.goals.length}</div><div class="cstat-lbl">Goals</div></div>
+  </div>
+</div>
+
+<div class="section-hdr sh-goals">&#9678; Goals with linked activities &amp; logs (${gsorted.length})</div>
+${goalSections||'<p style="color:#aaa;font-size:12px">No goals yet.</p>'}
+
+<div class="section-hdr sh-acts">&#9632; All activities — latest updated first (${sorted.length})</div>
+<table class="acts-table">
+  <tr><th>Title</th><th>Category</th><th>Priority</th><th>Status</th><th>Linked Goal</th><th>Progress</th><th>Due</th><th>Last Updated</th></tr>
+  ${sorted.map(a=>{const p=pct(a);const gn=goalName(a.goalId);return`<tr>
+    <td><strong>${a.title}</strong>${a.notes?`<div class="note-text">${a.notes}</div>`:''}</td>
+    <td>${a.category}</td>
+    <td><span class="pill" style="background:${prBg[a.priority]||'#f1efe8'};color:${prClr[a.priority]||'#444'}">${a.priority}</span></td>
+    <td><span class="pill" style="background:${sBg[a.status]};color:${sClr[a.status]};border:1px solid ${sBrd[a.status]}">${a.status}</span></td>
+    <td>${gn?`<span class="goal-tag">&#9678; ${gn}</span>`:'<span style="color:#ccc">—</span>'}</td>
+    <td><div class="mini-prog-bg"><div class="mini-prog-fill" style="width:${p}%;background:${sClr[a.status]}"></div></div><span style="font-size:9px;color:${sClr[a.status]};font-family:monospace">${p}%</span></td>
+    <td class="ts-cell">${fmtDate(a.due)}</td>
+    <td class="ts-cell">${fmtTS(a.updatedTs||a.ts)}</td></tr>`}).join('')}
+</table>
+
+<div class="section-hdr sh-log">&#9670; Activity log — latest first (${Math.min(db.log.length,200)} shown)</div>
+<table class="log-table">
+  <tr><th>Timestamp</th><th>Tag</th><th>Entry</th><th>Linked Goal</th></tr>
+  ${db.log.slice(0,200).map(e=>{const gn=goalName(e.goalId);return`<tr>
+    <td class="ts-cell">${fmtTS(e.ts)}</td>
+    <td><span class="pill" style="background:${tgBg[e.tag]||'#f1efe8'};color:${tgClr[e.tag]||'#444'}">${e.tag}</span></td>
+    <td>${e.text}</td>
+    <td>${gn?`<span class="goal-tag">&#9678; ${gn}</span>`:'<span style="color:#ccc">—</span>'}</td></tr>`}).join('')}
+</table>
+
+<div class="footer"><span>Business Tracker &nbsp;·&nbsp; ${ts}</span><span>All times in local timezone</span></div>
+</body></html>`;
+
+  /* Open in new tab and auto-trigger print → Save as PDF */
+  const pdfBlob=new Blob([html],{type:'text/html'});
+  const pdfUrl=URL.createObjectURL(pdfBlob);
+  const pdfWin=window.open(pdfUrl,'_blank');
+  if(pdfWin){
+    pdfWin.onload=()=>{
+      setTimeout(()=>{
+        pdfWin.focus();
+        pdfWin.print();
+      },800);
+    };
+    showNote('pdf-note','success','<i class="ti ti-printer" style="color:var(--green)"></i> Report opened in new tab — your browser Print dialog will appear. Choose <strong>Save as PDF</strong> as the destination.');
+  } else {
+    /* Fallback if popup blocked — download the HTML */
+    const fbA=document.createElement('a');
+    fbA.href=pdfUrl;fbA.download=`business-tracker_${stamp}.html`;
+    document.body.appendChild(fbA);fbA.click();
+    setTimeout(()=>{URL.revokeObjectURL(pdfUrl);fbA.remove();},1500);
+    showNote('pdf-note','error','Pop-up was blocked. HTML file downloaded instead — open it and use File → Print → Save as PDF. Allow pop-ups for this file to enable auto-print.');
+  }
+}
+
+/* ---- AI PROMPTS ---- */
+const PROMPTS=[
+  {icon:'ti-chart-bar',text:'Analyse my business activities and goals. For each goal, show how many linked activities are Done vs In Progress vs Blocked. Which goals are at risk?'},
+  {icon:'ti-trending-up',text:'Based on the goal progress and linked activities in my data, which goals are on track, which are behind, and what actions would most improve outcomes?'},
+  {icon:'ti-report',text:'Give me an executive summary: overall activity completion rate, goal health (green/amber/red), top 3 wins, and top 3 risks requiring attention.'},
+  {icon:'ti-link',text:'Which goals have the most Blocked or stalled activities linked to them? Summarise the blockers and suggest how to resolve them.'},
+  {icon:'ti-clock',text:'Look at my log entries linked to each goal. Identify patterns, recurring issues, or goals with no recent log activity that may be drifting.'},
+  {icon:'ti-bulb',text:'Based on goal deadlines and current activity progress, give me a prioritised action plan for this week — sorted by impact and urgency.'},
+  {icon:'ti-target',text:'For goals that are below 50% progress, list the linked activities still In Progress or To-do, and suggest which to accelerate or drop.'},
+  {icon:'ti-users',text:'Which business categories (Sales, Marketing, Operations etc.) contribute most to my goals? Are any goals lacking sufficient linked activities?'}
+];
+
+function renderExportTab(){
+  document.getElementById('prompt-list').innerHTML=PROMPTS.map((p,i)=>`
+    <div class="prompt-item" onclick="copyPrompt(${i})">
+      <i class="ti ${p.icon}" style="font-size:13px"></i>
+      <span>${p.text} <span style="color:var(--txt3);font-size:10px;margin-left:4px">· click to copy</span></span>
+    </div>`).join('');
+}
+
+function copyPrompt(i){
+  navigator.clipboard.writeText(PROMPTS[i].text).then(()=>showToast('Prompt copied to clipboard')).catch(()=>prompt('Copy:',PROMPTS[i].text));
+}
+
+function showToast(msg){
+  const t=document.getElementById('toast');t.innerHTML=`<i class="ti ti-check"></i> ${msg}`;
+  t.style.display='flex';setTimeout(()=>t.style.display='none',2200);
+}
+
+/* MODAL: close on backdrop click */
+document.getElementById('log-modal').addEventListener('click',function(e){if(e.target===this)closeModal();});
+document.getElementById('confirm-modal').addEventListener('click',function(e){if(e.target===this)closeConfirm();});
+
+/* ---- CONFIRM MODAL ---- */
+let _confirmCallback=null;
+function showConfirm(title,body,label,cb){
+  document.getElementById('confirm-title-text').textContent=title;
+  document.getElementById('confirm-body-text').textContent=body;
+  document.getElementById('confirm-ok-label').textContent=label;
+  document.getElementById('confirm-ok-btn').onclick=()=>{closeConfirm();cb();};
+  document.getElementById('confirm-modal').classList.add('open');
+}
+function closeConfirm(){document.getElementById('confirm-modal').classList.remove('open');}
+
+function confirmClearActivities(){
+  const n=db.activities.length;
+  if(!n){showToast('No activities to clear');return;}
+  showConfirm(
+    'Clear all activities?',
+    `This will permanently delete all ${n} activit${n===1?'y':'ies'}. Your goals and log entries will be kept. This cannot be undone.`,
+    'Clear all activities',
+    ()=>{
+      db.log.unshift({id:uid(),text:`Cleared all ${n} activities`,tag:'Note',ts:Date.now()});
+      db.activities=[];
+      save();renderActivities();renderDashboard();showToast(`${n} activities cleared`);
+    }
+  );
+}
+
+function confirmClearLogs(){
+  const n=db.log.length;
+  if(!n){showToast('No log entries to clear');return;}
+  showConfirm(
+    'Clear all log entries?',
+    `This will permanently delete all ${n} log entr${n===1?'y':'ies'}. This cannot be undone.`,
+    'Clear all logs',
+    ()=>{db.log=[];save();renderLog();showToast(`${n} log entries cleared`);}
+  );
+}
+
+function markAllDone(){
+  const pending=db.activities.filter(a=>a.status!=='Done');
+  if(!pending.length){showToast('All activities already done');return;}
+  showConfirm(
+    'Mark all as Done?',
+    `This will mark all ${pending.length} non-done activit${pending.length===1?'y':'ies'} as Done and set progress to 100%.`,
+    'Mark all done',
+    ()=>{
+      const now=Date.now();
+      pending.forEach(a=>{a.status='Done';a.progress=100;a.updatedTs=now;});
+      db.log.unshift({id:uid(),text:`Marked ${pending.length} activities as Done`,tag:'Milestone',ts:now});
+      save();renderActivities();renderDashboard();showToast(`${pending.length} activities marked Done`);
+    }
+  );
+}
+
+/* ---- INIT ---- */
+load();
+document.getElementById('current-date').textContent=new Date().toLocaleDateString('en-GB',{weekday:'short',day:'numeric',month:'short',year:'numeric'});
+updateFileBar();populateGoalSelects();renderDashboard();
+</script>
+</body>
+</html>
